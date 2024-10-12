@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Iris Mapper</title>
+    <style>
+        /* Body and container styles */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+
+        /* Expanding the mapper container for better SVG visibility */
+        #mapper-container {
+            width: 1000px;
+            height: 800px;
+            margin: 20px auto;
+            position: relative;
+            border: 2px solid #333;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background-color: white;
+        }
+
+        #image-container, #svg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #image-container img {
+            max-width: none;
+            max-height: none;
+            pointer-events: none;
+        }
+
+        #svg-container {
+            pointer-events: none;
+        }
+
+        /* Floating menu styles */
+        #floating-menu {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 200px;
+            background-color: #f7f7f7;
+            border-right: 2px solid #333;
+            padding: 15px;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        #floating-menu.hidden {
+            transform: translateX(-100%);
+        }
+
+        #floating-menu h3 {
+            margin-bottom: 15px;
+        }
+
+        button, input[type="file"], select, input[type="color"], input[type="range"] {
+            display: block;
+            margin: 10px 0;
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Menu toggle button */
+        #menu-toggle {
+            position: fixed;
+            top: 50%;
+            left: 200px;
+            transform: translateY(-50%);
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            cursor: pointer;
+            z-index: 1001;
+            font-size: 16px;
+            transition: left 0.3s ease;
+            width: auto;
+            height: auto;
+        }
+
+        #menu-toggle.hidden {
+            left: 0;
+        }
+
+        /* Directional buttons layout */
+        .direction-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .direction-buttons button {
+            font-size: 18px;
+        }
+
+        /* Accordion Styles */
+        .accordion {
+            background-color: #eee;
+            color: #444;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            transition: background-color 0.3s ease;
+            margin-bottom: 5px;
+        }
+
+        .accordion:hover {
+            background-color: #ddd;
+        }
+
+        .panel {
+            padding: 0 10px;
+            background-color: white;
+            display: none;
+            overflow: hidden;
+        }
+
+        .panel img {
+            max-width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .client-panel {
+            padding: 10px 0;
+        }
+
+        .client-header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .client-header:hover {
+            background-color: #45a049;
+        }
+
+        .client-content {
+            display: none;
+            margin-top: 10px;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Enhanced Iris Mapper</h1>
+    
+    <!-- Floating menu that contains all the tools -->
+    <div id="floating-menu">
+        <h3>Tools</h3>
+
+        <!-- Image Upload -->
+        <label for="imageUpload">Upload Eye Image:</label>
+        <input type="file" id="imageUpload" accept="image/*">
+
+        <!-- SVG Selection -->
+        <label for="svgSelector">Select Iris Map:</label>
+        <select id="svgSelector">
+            <option value="Angerer_DE_01">Angerer_DE_01</option>
+            <option value="Bourdil_FR_01">Bourdil_FR_01</option>
+            <option value="IrisLAB_EN_02">IrisLAB_EN_02</option>
+            <option value="IrisLAB_FR_02">IrisLAB_FR_02</option>
+            <option value="Jaussas_FR_01">Jaussas_FR_01</option>
+            <option value="Jensen_EN_01">Jensen_EN_01</option>
+            <option value="Jensen_FR_01">Jensen_FR_01</option>
+            <option value="Roux_FR_01">Roux_FR_01</option>
+        </select>
+
+        <!-- Eye Side Selection -->
+        <label for="eyeSideSelector">Select Eye Side:</label>
+        <select id="eyeSideSelector">
+            <option value="L" selected>Left Eye</option>
+            <option value="R">Right Eye</option>
+        </select>
+
+        <!-- Transform Tools -->
+        <label>Transform Tools</label>
+        <button id="zoomIn">🔍+ Zoom In</button>
+        <button id="zoomOut">🔍- Zoom Out</button>
+        <button id="rotateLeft">↺ Rotate Left</button>
+        <button id="rotateRight">↻ Rotate Right</button>
+        <button id="resetButton">↺ Reset</button>
+
+        <!-- Directional Movement -->
+        <div class="direction-buttons">
+            <button id="moveLeft">←</button>
+            <button id="moveUp">↑</button>
+            <button id="moveRight">→</button>
+            <div></div>
+            <button id="moveDown">↓</button>
+            <div></div>
+        </div>
+
+        <!-- SVG Tools -->
+        <label for="opacitySlider">SVG Transparency</label>
+        <input type="range" id="opacitySlider" min="0" max="1" step="0.01" value="0.7">
+
+        <label for="mapColor">SVG Color</label>
+        <input type="color" id="mapColor" value="#000000">
+
+        <button id="toggleMap">Toggle SVG Map</button>
+
+        <!-- Save Image -->
+        <button id="saveImage">💾 Save Image</button>
+
+        <!-- Accordion for Clients -->
+        <h3>Clients</h3>
+        <input type="text" id="newClientName" placeholder="New Client Name">
+        <button id="addClient">Add Client</button>
+
+        <div id="clientAccordion"></div>
+    </div>
+
+    <!-- Menu toggle button -->
+    <button id="menu-toggle">◀</button>
+
+    <!-- Mapper Container -->
+    <div id="mapper-container">
+        <div id="image-container"></div>
+        <div id="svg-container"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageContainer = document.getElementById('image-container');
+            const svgContainer = document.getElementById('svg-container');
+            const svgSelector = document.getElementById('svgSelector');
+            const eyeSideSelector = document.getElementById('eyeSideSelector');
+            const mapColor = document.getElementById('mapColor');
+            const opacitySlider = document.getElementById('opacitySlider');
+            const menuToggle = document.getElementById('menu-toggle');
+            const floatingMenu = document.getElementById('floating-menu');
+            const newClientName = document.getElementById('newClientName');
+            const clientAccordion = document.getElementById('clientAccordion');
+            let clients = {};  // Object to store clients and their images
+            let img;
+            let rotation = 0;
+            let scale = 1;
+            let isDragging = false;
+            let startX, startY, translateX = 0, translateY = 0;
+
+            // Toggle menu visibility
+            menuToggle.addEventListener('click', function() {
+                floatingMenu.classList.toggle('hidden');
+                menuToggle.classList.toggle('hidden');
+                menuToggle.textContent = floatingMenu.classList.contains('hidden') ? '▶' : '◀';
+            });
+
+            // Load SVG based on selection
+            function loadSVG(svgFile) {
+                const eyeSide = eyeSideSelector.value;
+                fetch(`grids/${svgFile}_${eyeSide}.svg`)
+                    .then(response => response.text())
+                    .then(svgContent => {
+                        svgContainer.innerHTML = svgContent;
+                        const svgElement = svgContainer.querySelector('svg');
+                        svgElement.setAttribute('width', '100%');
+                        svgElement.setAttribute('height', '100%');
+                        svgElement.style.pointerEvents = 'none';
+                        svgContainer.style.opacity = opacitySlider.value;
+                        changeMapColor(mapColor.value);
+                    })
+                    .catch(error => console.error('Error loading SVG:', error));
+            }
+
+            // Initial SVG load
+            loadSVG(svgSelector.value);
+
+            // Change SVG map on selection
+            svgSelector.addEventListener('change', function() {
+                loadSVG(this.value);
+            });
+
+            // Change SVG map on eye side change
+            eyeSideSelector.addEventListener('change', function() {
+                loadSVG(svgSelector.value);
+            });
+
+            // Change SVG path colors
+            function changeMapColor(color) {
+                const svgPaths = document.querySelectorAll('#svg-container svg path');
+                svgPaths.forEach(path => {
+                    path.setAttribute('stroke', color);
+                });
+            }
+
+            // Change color of SVG paths
+            mapColor.addEventListener('input', function() {
+                changeMapColor(this.value);
+            });
+
+            // Adjust the opacity of the SVG overlay
+            opacitySlider.addEventListener('input', function() {
+                svgContainer.style.opacity = this.value;
+            });
+
+            // Image upload handling
+            document.getElementById('imageUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        img = new Image();
+                        img.onload = function() {
+                            imageContainer.innerHTML = '';
+                            imageContainer.appendChild(img);
+                            resetImagePosition();
+                            svgContainer.style.display = 'block';
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Update image transformation
+            function updateImageTransform() {
+                if (img) {
+                    img.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg) scale(${scale})`;
+                }
+            }
+
+            // Rotate and zoom functions
+            document.getElementById('rotateLeft').addEventListener('click', () => {
+                rotation -= 5;
+                updateImageTransform();
+            });
+
+            document.getElementById('rotateRight').addEventListener('click', () => {
+                rotation += 5;
+                updateImageTransform();
+            });
+
+            document.getElementById('zoomIn').addEventListener('click', () => {
+                scale *= 1.1;
+                updateImageTransform();
+            });
+
+            document.getElementById('zoomOut').addEventListener('click', () => {
+                scale /= 1.1;
+                updateImageTransform();
+            });
+
+            // Mouse wheel zoom handling
+            document.getElementById('mapper-container').addEventListener('wheel', function(e) {
+                e.preventDefault();
+                const delta = e.deltaY * -0.001;
+                scale *= 1 + delta;
+                updateImageTransform();
+            });
+
+            // Drag the image using the mouse
+            document.getElementById('mapper-container').addEventListener('mousedown', function(e) {
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (isDragging && img) {
+                    translateX = e.clientX - startX;
+                    translateY = e.clientY - startY;
+                    updateImageTransform();
+                }
+            });
+
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+            });
+
+            // Directional move buttons
+            document.getElementById('moveUp').addEventListener('click', () => {
+                translateY += 10;
+                updateImageTransform();
+            });
+
+            document.getElementById('moveDown').addEventListener('click', () => {
+                translateY -= 10;
+                updateImageTransform();
+            });
+
+            document.getElementById('moveLeft').addEventListener('click', () => {
+                translateX += 10;
+                updateImageTransform();
+            });
+
+            document.getElementById('moveRight').addEventListener('click', () => {
+                translateX -= 10;
+                updateImageTransform();
+            });
+
+            // Reset image position and transformations
+            function resetImagePosition() {
+                rotation = 0;
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                updateImageTransform();
+            }
+
+            document.getElementById('resetButton').addEventListener('click', resetImagePosition);
+
+            // Save the image with SVG overlay
+            document.getElementById('saveImage').addEventListener('click', () => {
+                html2canvas(document.getElementById('mapper-container')).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'iris_map.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                });
+            });
+
+            // Toggle the visibility of the SVG map
+            document.getElementById('toggleMap').addEventListener('click', () => {
+                svgContainer.style.display = svgContainer.style.display === 'none' ? 'block' : 'none';
+            });
+
+            // Function to add a new client to the accordion
+            document.getElementById('addClient').addEventListener('click', () => {
+                const clientName = newClientName.value.trim();
+                if (clientName && !clients[clientName]) {
+                    const accordion = document.createElement('button');
+                    accordion.classList.add('accordion');
+                    accordion.innerText = clientName;
+
+                    const panel = document.createElement('div');
+                    panel.classList.add('panel', 'client-panel');
+                    panel.innerHTML = `
+                        <label>Auto-Save Status: <span id="autoSaveStatus_${clientName}">Enabled</span></label>
+                        <textarea id="clientNotes_${clientName}" placeholder="Enter notes for the client..."></textarea>
+                        <button id="saveNotes_${clientName}">Save Notes</button>
+                        
+                        <h4>History</h4>
+                        <ul id="historyLog_${clientName}"></ul>
+                        
+                        <h4>Image Comparison</h4>
+                        <label for="compareImage1_${clientName}">Select Image 1:</label>
+                        <select id="compareImage1_${clientName}"></select>
+
+                        <label for="compareImage2_${clientName}">Select Image 2:</label>
+                        <select id="compareImage2_${clientName}"></select>
+
+                        <button id="compareImages_${clientName}">Compare Images</button>
+                        <div id="imageComparisonContainer_${clientName}">
+                            <img id="comparisonImage1_${clientName}" src="" alt="Image 1" style="width: 48%;">
+                            <img id="comparisonImage2_${clientName}" src="" alt="Image 2" style="width: 48%;">
+                        </div>
+
+                        <button id="exportClientData_${clientName}">Export Client Data</button>
+                        <button id="backupAllData_${clientName}">Backup All Data</button>
+                        
+                        <button id="generateReport_${clientName}">Generate PDF Report</button>
+                    `;
+
+                    accordion.addEventListener('click', function() {
+                        this.classList.toggle('active');
+                        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+                    });
+
+                    clients[clientName] = []; // Initialize empty image list for the client
+
+                    clientAccordion.appendChild(accordion);
+                    clientAccordion.appendChild(panel);
+
+                    newClientName.value = ''; // Clear the input field
+                }
+            });
+
+        });
+    </script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</body>
+</html>

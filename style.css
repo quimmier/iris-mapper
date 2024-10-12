@@ -1,0 +1,46 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f0f0f0;
+    padding: 20px;
+}
+
+canvas {
+    border: 2px solid #ccc;
+    margin: 20px auto;
+    display: block;
+}
+
+.controls {
+    margin: 20px auto;
+    width: 80%;
+    text-align: center;
+}
+
+label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+input, select, button {
+    margin: 10px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #007bff;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 10px 20px;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#opacitySlider {
+    width: 200px;
+}
